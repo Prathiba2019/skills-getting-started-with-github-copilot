@@ -62,6 +62,18 @@ def signup_for_activity(activity_name: str, email: str):
     # Get the specific activity
     activity = activities[activity_name]
 
-    # Add student
-    activity["participants"].append(email)
+    # Normalize email (trim and lowercase) to avoid duplicates from case/whitespace
+    normalized = email.strip().lower()
+
+    # Prevent duplicate signups
+    existing = [p.strip().lower() for p in activity.get("participants", [])]
+    if normalized in existing:
+        raise HTTPException(status_code=400, detail="Student is already signed up")
+
+    # Optional: enforce max participants if configured
+    if len(activity.get("participants", [])) >= activity.get("max_participants", float("inf")):
+        raise HTTPException(status_code=400, detail="Activity is full")
+
+    # Add normalized student email
+    activity["participants"].append(normalized)
     return {"message": f"Signed up {email} for {activity_name}"}
